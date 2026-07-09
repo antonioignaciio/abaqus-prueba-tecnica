@@ -3,41 +3,304 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Evolución del Portafolio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Evolución del Portafolio {{ portafolio_id }}</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <style>
-        body { font-family: sans-serif; max-width: 900px; margin: 40px auto; }
-        .controles { margin-bottom: 20px; }
-        canvas { margin-bottom: 40px; }
+        :root {
+            --bg: #f4f6fb;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --border: #e5e9f2;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --accent: #2563eb;
+            --accent-soft: #eff4ff;
+            --positive: #16a34a;
+            --negative: #dc2626;
+            --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .06);
+            --radius: 16px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0b1120;
+                --surface: #131c2e;
+                --surface-2: #0f1728;
+                --border: #223049;
+                --text: #e8edf6;
+                --text-muted: #93a1b9;
+                --accent: #60a5fa;
+                --accent-soft: #17233c;
+                --positive: #4ade80;
+                --negative: #f87171;
+                --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 12px 32px rgba(0, 0, 0, .35);
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 960px; margin: 0 auto; }
+
+        header { margin-bottom: 28px; }
+
+        .eyebrow {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-soft);
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 4px;
+            letter-spacing: -.02em;
+        }
+
+        .subtitle { color: var(--text-muted); font-size: 15px; margin: 0; }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .controles {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 16px;
+            padding: 20px 22px;
+            margin-bottom: 24px;
+        }
+
+        .campo { display: flex; flex-direction: column; gap: 6px; }
+
+        .campo label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        input[type="date"] {
+            font: inherit;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface-2);
+            color: var(--text);
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        input[type="date"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        button {
+            font: inherit;
+            font-weight: 600;
+            color: #fff;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 22px;
+            cursor: pointer;
+            transition: transform .08s, filter .15s;
+        }
+
+        button:hover { filter: brightness(1.05); }
+        button:active { transform: translateY(1px); }
+        button:disabled { opacity: .6; cursor: progress; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat { padding: 18px 20px; }
+        .stat .etiqueta {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 8px;
+        }
+        .stat .valor { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+        .stat .valor.positive { color: var(--positive); }
+        .stat .valor.negative { color: var(--negative); }
+
+        .panel { padding: 22px; margin-bottom: 24px; }
+        .panel h2 { font-size: 17px; font-weight: 700; margin: 0 0 2px; }
+        .panel p.desc { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; }
+
+        .canvas-wrap { position: relative; height: 320px; }
+
+        .estado {
+            padding: 40px 22px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+        .estado.error { color: var(--negative); }
+
+        .spinner {
+            width: 22px; height: 22px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: -5px;
+            margin-right: 10px;
+            animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <h1>Evolución del Portafolio {{ portafolio_id }}</h1>
+    <div class="container">
+        <header>
+            <span class="eyebrow">Portafolio {{ portafolio_id }}</span>
+            <h1>Evolución del portafolio</h1>
+            <p class="subtitle">Valor total y composición por activo a lo largo del tiempo.</p>
+        </header>
 
-    <div class="controles">
-        <label>Desde: <input type="date" id="fecha_inicio" value="2022-02-15"></label>
-        <label>Hasta: <input type="date" id="fecha_fin" value="2022-03-15"></label>
-        <button onclick="actualizarGraficos()">Consultar</button>
+        <div class="controles card">
+            <div class="campo">
+                <label for="fecha_inicio">Desde</label>
+                <input type="date" id="fecha_inicio" value="2022-02-15">
+            </div>
+            <div class="campo">
+                <label for="fecha_fin">Hasta</label>
+                <input type="date" id="fecha_fin" value="2022-03-15">
+            </div>
+            <button id="btnConsultar" onclick="actualizarGraficos()">Consultar</button>
+        </div>
+
+        <div id="estado" class="estado card hidden"></div>
+
+        <div id="contenido">
+            <div class="stats">
+                <div class="stat card">
+                    <div class="etiqueta">Valor inicial</div>
+                    <div class="valor" id="statInicial">—</div>
+                </div>
+                <div class="stat card">
+                    <div class="etiqueta">Valor final</div>
+                    <div class="valor" id="statFinal">—</div>
+                </div>
+                <div class="stat card">
+                    <div class="etiqueta">Variación</div>
+                    <div class="valor" id="statVariacion">—</div>
+                </div>
+            </div>
+
+            <div class="panel card">
+                <h2>Valor total del portafolio (V<sub>t</sub>)</h2>
+                <p class="desc">Suma del valor de todos los activos en cada fecha.</p>
+                <div class="canvas-wrap"><canvas id="graficoValor"></canvas></div>
+            </div>
+
+            <div class="panel card">
+                <h2>Weights por activo (w<sub>i,t</sub>)</h2>
+                <p class="desc">Participación relativa de cada activo sobre el valor total (apilado a 100%).</p>
+                <div class="canvas-wrap"><canvas id="graficoWeights"></canvas></div>
+            </div>
+        </div>
     </div>
-
-    <h2>Valor total del portafolio (V_t)</h2>
-    <canvas id="graficoValor"></canvas>
-
-    <h2>Weights por activo (w_i,t)</h2>
-    <canvas id="graficoWeights"></canvas>
 
     <script>
         const portafolioId = {{ portafolio_id }};
         let chartValor = null;
         let chartWeights = null;
 
+        const fmtMoneda = new Intl.NumberFormat('es-CL', {
+            style: 'currency', currency: 'CLP', maximumFractionDigits: 0
+        });
+        const fmtPct = new Intl.NumberFormat('es-CL', {
+            style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2
+        });
+
+        const colores = [
+            '#2563eb', '#dc2626', '#16a34a', '#ca8a04', '#9333ea',
+            '#0891b2', '#c2410c', '#4338ca', '#be185d', '#65a30d',
+            '#0d9488', '#7c3aed', '#b91c1c', '#0369a1', '#a16207',
+            '#4d7c0f', '#831843',
+        ];
+
+        function colorTexto() {
+            return getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+        }
+        function colorBorde() {
+            return getComputedStyle(document.body).getPropertyValue('--border').trim();
+        }
+
         async function obtenerEvolucion(fechaInicio, fechaFin) {
             const url = `/api/portafolios/${portafolioId}/evolucion/?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error('Error al consultar la API');
+                let msg = 'Error al consultar la API';
+                try {
+                    const cuerpo = await response.json();
+                    if (cuerpo && cuerpo.error) msg = cuerpo.error;
+                } catch (e) { /* respuesta sin JSON */ }
+                throw new Error(msg);
             }
             return await response.json();
+        }
+
+        function mostrarEstado(html, esError) {
+            const estado = document.getElementById('estado');
+            estado.innerHTML = html;
+            estado.classList.toggle('error', !!esError);
+            estado.classList.remove('hidden');
+            document.getElementById('contenido').classList.add('hidden');
+        }
+
+        function ocultarEstado() {
+            document.getElementById('estado').classList.add('hidden');
+            document.getElementById('contenido').classList.remove('hidden');
+        }
+
+        function actualizarResumen(datos) {
+            const inicial = parseFloat(datos[0].valor_total);
+            const final = parseFloat(datos[datos.length - 1].valor_total);
+            const variacion = inicial !== 0 ? (final / inicial - 1) : 0;
+
+            document.getElementById('statInicial').textContent = fmtMoneda.format(inicial);
+            document.getElementById('statFinal').textContent = fmtMoneda.format(final);
+
+            const elVar = document.getElementById('statVariacion');
+            const signo = variacion > 0 ? '+' : '';
+            elVar.textContent = signo + fmtPct.format(variacion);
+            elVar.classList.toggle('positive', variacion >= 0);
+            elVar.classList.toggle('negative', variacion < 0);
         }
 
         function dibujarGraficoValor(datos) {
@@ -47,6 +310,10 @@
             if (chartValor) chartValor.destroy();
 
             const ctx = document.getElementById('graficoValor');
+            const gradiente = ctx.getContext('2d').createLinearGradient(0, 0, 0, 320);
+            gradiente.addColorStop(0, 'rgba(37, 99, 235, .25)');
+            gradiente.addColorStop(1, 'rgba(37, 99, 235, 0)');
+
             chartValor = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -55,8 +322,36 @@
                         label: 'Valor total (V_t)',
                         data: valores,
                         borderColor: '#2563eb',
-                        fill: false,
+                        backgroundColor: gradiente,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: .25,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
                     }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (item) => ' ' + fmtMoneda.format(item.parsed.y)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: colorTexto(), maxRotation: 0, autoSkipPadding: 20 } },
+                        y: {
+                            grid: { color: colorBorde() },
+                            ticks: {
+                                color: colorTexto(),
+                                callback: (v) => fmtMoneda.format(v)
+                            }
+                        }
+                    }
                 }
             });
         }
@@ -65,18 +360,14 @@
             const labels = datos.map(dia => dia.fecha);
             const activosIds = Object.keys(datos[0].weights);
 
-            const colores = [
-                '#2563eb', '#dc2626', '#16a34a', '#ca8a04', '#9333ea',
-                '#0891b2', '#c2410c', '#4338ca', '#be185d', '#65a30d',
-                '#0d9488', '#7c3aed', '#b91c1c', '#0369a1', '#a16207',
-                '#4d7c0f', '#831843',
-            ];
-
             const datasets = activosIds.map((activoId, i) => ({
                 label: `Activo ${activoId}`,
                 data: datos.map(dia => parseFloat(dia.weights[activoId])),
                 backgroundColor: colores[i % colores.length],
+                borderColor: colores[i % colores.length],
+                borderWidth: 0,
                 fill: true,
+                pointRadius: 0,
             }));
 
             if (chartWeights) chartWeights.destroy();
@@ -86,8 +377,27 @@
                 type: 'line',
                 data: { labels: labels, datasets: datasets },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: colorTexto(), boxWidth: 12, boxHeight: 12, usePointStyle: true, padding: 12 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (item) => ` ${item.dataset.label}: ${fmtPct.format(item.parsed.y)}`
+                            }
+                        }
+                    },
                     scales: {
-                        y: { stacked: true, min: 0, max: 1 }
+                        x: { grid: { display: false }, ticks: { color: colorTexto(), maxRotation: 0, autoSkipPadding: 20 } },
+                        y: {
+                            stacked: true, min: 0, max: 1,
+                            grid: { color: colorBorde() },
+                            ticks: { color: colorTexto(), callback: (v) => fmtPct.format(v) }
+                        }
                     },
                     elements: { point: { radius: 0 } }
                 }
@@ -95,13 +405,30 @@
         }
 
         async function actualizarGraficos() {
+            const boton = document.getElementById('btnConsultar');
             const fechaInicio = document.getElementById('fecha_inicio').value;
             const fechaFin = document.getElementById('fecha_fin').value;
 
-            const datos = await obtenerEvolucion(fechaInicio, fechaFin);
+            boton.disabled = true;
+            mostrarEstado('<span class="spinner"></span> Consultando datos…', false);
 
-            dibujarGraficoValor(datos);
-            dibujarGraficoWeights(datos);
+            try {
+                const datos = await obtenerEvolucion(fechaInicio, fechaFin);
+
+                if (!datos || datos.length === 0) {
+                    mostrarEstado('No hay datos para el rango de fechas seleccionado.', false);
+                    return;
+                }
+
+                ocultarEstado();
+                actualizarResumen(datos);
+                dibujarGraficoValor(datos);
+                dibujarGraficoWeights(datos);
+            } catch (e) {
+                mostrarEstado(e.message, true);
+            } finally {
+                boton.disabled = false;
+            }
         }
 
         actualizarGraficos();

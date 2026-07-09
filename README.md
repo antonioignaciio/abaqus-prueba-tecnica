@@ -96,3 +96,4 @@ Ejemplo: `http://127.0.0.1:8000/portafolios/1/`
 - El proyecto cumple los 5 puntos solicitados en el enunciado (modelado, ETL, cálculo de cantidades iniciales, API REST con ORM, y vista con gráficos).
 - No se alcanzó a completar la reestructuración según la guía de estilos de [HackSoft](https://github.com/HackSoftware/Django-Styleguide) (bonus), aunque se identificaron los cambios puntuales necesarios (separación de `services.py`/`selectors.py`, serializers de entrada/salida, adelgazamiento de views).
 - Pendiente conocido: tests automatizados.
+-Se usó IA para mejorar el diseño de evolucion.html
