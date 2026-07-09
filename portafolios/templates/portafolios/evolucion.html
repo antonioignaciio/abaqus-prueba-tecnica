@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Evolución del Portafolio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 900px; margin: 40px auto; }
+        .controles { margin-bottom: 20px; }
+        canvas { margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+    <h1>Evolución del Portafolio {{ portafolio_id }}</h1>
+
+    <div class="controles">
+        <label>Desde: <input type="date" id="fecha_inicio" value="2022-02-15"></label>
+        <label>Hasta: <input type="date" id="fecha_fin" value="2022-03-15"></label>
+        <button onclick="actualizarGraficos()">Consultar</button>
+    </div>
+
+    <h2>Valor total del portafolio (V_t)</h2>
+    <canvas id="graficoValor"></canvas>
+
+    <h2>Weights por activo (w_i,t)</h2>
+    <canvas id="graficoWeights"></canvas>
+
+    <script>
+        const portafolioId = {{ portafolio_id }};
+        let chartValor = null;
+        let chartWeights = null;
+
+        async function obtenerEvolucion(fechaInicio, fechaFin) {
+            const url = `/api/portafolios/${portafolioId}/evolucion/?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Error al consultar la API');
+            }
+            return await response.json();
+        }
+
+        function dibujarGraficoValor(datos) {
+            const labels = datos.map(dia => dia.fecha);
+            const valores = datos.map(dia => parseFloat(dia.valor_total));
+
+            if (chartValor) chartValor.destroy();
+
+            const ctx = document.getElementById('graficoValor');
+            chartValor = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Valor total (V_t)',
+                        data: valores,
+                        borderColor: '#2563eb',
+                        fill: false,
+                    }]
+                }
+            });
+        }
+
+        function dibujarGraficoWeights(datos) {
+            const labels = datos.map(dia => dia.fecha);
+            const activosIds = Object.keys(datos[0].weights);
+
+            const colores = [
+                '#2563eb', '#dc2626', '#16a34a', '#ca8a04', '#9333ea',
+                '#0891b2', '#c2410c', '#4338ca', '#be185d', '#65a30d',
+                '#0d9488', '#7c3aed', '#b91c1c', '#0369a1', '#a16207',
+                '#4d7c0f', '#831843',
+            ];
+
+            const datasets = activosIds.map((activoId, i) => ({
+                label: `Activo ${activoId}`,
+                data: datos.map(dia => parseFloat(dia.weights[activoId])),
+                backgroundColor: colores[i % colores.length],
+                fill: true,
+            }));
+
+            if (chartWeights) chartWeights.destroy();
+
+            const ctx = document.getElementById('graficoWeights');
+            chartWeights = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    scales: {
+                        y: { stacked: true, min: 0, max: 1 }
+                    },
+                    elements: { point: { radius: 0 } }
+                }
+            });
+        }
+
+        async function actualizarGraficos() {
+            const fechaInicio = document.getElementById('fecha_inicio').value;
+            const fechaFin = document.getElementById('fecha_fin').value;
+
+            const datos = await obtenerEvolucion(fechaInicio, fechaFin);
+
+            dibujarGraficoValor(datos);
+            dibujarGraficoWeights(datos);
+        }
+
+        actualizarGraficos();
+    </script>
+</body>
+</html>
