@@ -39,7 +39,9 @@ python manage.py cargar_datos datos.xlsx
 python manage.py calcular_cantidades
 ```
 
-**Importante:** corre estos dos comandos una sola vez sobre una base de datos limpia. Si necesitas recargar los datos desde cero, borra `db.sqlite3` y vuelve a migrar:
+El ETL es idempotente: correr `cargar_datos` varias veces sobre una base ya poblada no genera duplicados (activos y portafolios se buscan por nombre antes de crearse, y weights/precios usan restricciones de unicidad en la base de datos).
+
+Si necesitas recargar los datos desde cero de todas formas:
 
 ```bash
 rm db.sqlite3
@@ -85,12 +87,12 @@ Ejemplo: `http://127.0.0.1:8000/portafolios/1/`
 
 - **Activo**: cada uno de los 17 instrumentos invertibles.
 - **Portafolio**: portafolio 1 y portafolio 2, cada uno con su valor inicial ($V_0$).
-- **Precio**: precio histórico de cada activo por fecha (367 fechas × 17 activos).
-- **Weight**: peso inicial ($w_{i,0}$) de cada activo en cada portafolio, a la fecha 15/02/2022.
-- **Cantidad**: cantidad fija de unidades ($C_{i,0}$) de cada activo en cada portafolio, calculada a partir de los weights y precios iniciales, y que permanece invariante en el tiempo.
+- **Precio**: precio histórico de cada activo por fecha (367 fechas × 17 activos). Único por `(activo, fecha)`.
+- **Weight**: peso inicial ($w_{i,0}$) de cada activo en cada portafolio, a la fecha 15/02/2022. Único por `(portafolio, activo)`.
+- **Cantidad**: cantidad fija de unidades ($C_{i,0}$) de cada activo en cada portafolio, calculada a partir de los weights y precios iniciales, y que permanece invariante en el tiempo. Única por `(portafolio, activo)`.
 
 ## Notas y pendientes
 
 - El proyecto cumple los 5 puntos solicitados en el enunciado (modelado, ETL, cálculo de cantidades iniciales, API REST con ORM, y vista con gráficos).
 - No se alcanzó a completar la reestructuración según la guía de estilos de [HackSoft](https://github.com/HackSoftware/Django-Styleguide) (bonus), aunque se identificaron los cambios puntuales necesarios (separación de `services.py`/`selectors.py`, serializers de entrada/salida, adelgazamiento de views).
-- Pendientes conocidos: tests automatizados, idempotencia del ETL (actualmente duplica datos si se corre dos veces sobre una BD ya poblada sin limpiarla antes).
+- Pendiente conocido: tests automatizados.
