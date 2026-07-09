@@ -13,14 +13,18 @@ def leer_excel(ruta_archivo):
 def crear_activos(weights_df):
     activos = {}
     for nombre in weights_df['activos']:
-        activo = Activo.objects.create(nombre=nombre)
+        activo, _ = Activo.objects.get_or_create(nombre=nombre)
         activos[nombre] = activo
     return activos
 
 
 def crear_portafolios():
-    p1 = Portafolio.objects.create(nombre='Portafolio 1', valor_inicial=Decimal('1000000000'))
-    p2 = Portafolio.objects.create(nombre='Portafolio 2', valor_inicial=Decimal('1000000000'))
+    p1, _ = Portafolio.objects.get_or_create(
+        nombre='Portafolio 1', defaults={'valor_inicial': Decimal('1000000000')}
+    )
+    p2, _ = Portafolio.objects.get_or_create(
+        nombre='Portafolio 2', defaults={'valor_inicial': Decimal('1000000000')}
+    )
     return p1, p2
 
 
@@ -38,7 +42,7 @@ def crear_weights(weights_df, activos, p1, p2):
             activo=activos[nombre_activo],
             valor=Decimal(str(fila['portafolio 2'])),
         ))
-    Weight.objects.bulk_create(weights)
+    Weight.objects.bulk_create(weights, ignore_conflicts=True)
 
 
 def transformar_precios_a_largo(precios_df):
@@ -53,7 +57,7 @@ def crear_precios(precios_largo, activos):
             fecha=fila['Dates'],
             precio=Decimal(str(fila['valor'])),
         ))
-    Precio.objects.bulk_create(precios)
+    Precio.objects.bulk_create(precios, ignore_conflicts=True)
 
 @transaction.atomic
 def cargar_datos(ruta_archivo):
